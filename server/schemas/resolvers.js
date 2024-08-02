@@ -1,29 +1,82 @@
-const { Tech, Matchup } = require('../models');
+// import user model
+const { User, Book } = require('../models');
+// import sign token function from auth
+const { signToken } = require('../utils/auth');
 
-const resolvers = {
+module.exports = {
   Query: {
-    tech: async () => {
-      return Tech.find({});
-    },
-    matchups: async (parent, { _id }) => {
-      const params = _id ? { _id } : {};
-      return Matchup.find(params);
+    async me(_, args, context) {
+      const foundUser = await User.findOne({_id: context.user._id });
+  
+      if (!foundUser) {
+        // return res.status(400).json({ message: 'Cannot find a user with this id!' });
+        return null;
+      }
+  
+      // res.json(foundUser);
+      return (foundUser);
     },
   },
   Mutation: {
-    createMatchup: async (parent, args) => {
-      const matchup = await Matchup.create(args);
-      return matchup;
+    async createUser(_, args) {
+      const user = await User.create({
+        username: args.username,
+        email: args.email,
+        password: args.password
+      });
+  
+      if (!user) {
+        // return res.status(400).json({ message: 'Something is wrong!' });
+        return null;
+      }
+      const token = signToken(user);
+      // res.json({ token, user });
+      return ({ token, user });
     },
-    createVote: async (parent, { _id, techNum }) => {
-      const vote = await Matchup.findOneAndUpdate(
-        { _id },
-        { $inc: { [`tech${techNum}_votes`]: 1 } },
-        { new: true }
-      );
-      return vote;
+    async login(_, args) {
+      const user = await User.findOne({
+        email:args.email
+      });
+      if (!user) {
+        return null;
+      }
+  
+      const correctPw = await user.isCorrectPassword(args.password);
+  
+      if (!correctPw) {
+        return null;
+      }
+      const token = signToken(user);
+      return ({ token, user });
     },
-  },
-};
 
-module.exports = resolvers;
+    
+    async saveBook(_, {book}, context) {
+     
+      if(!context.user || !book){
+        return null;
+      }
+        const updatedUser = await User.findOneAndUpdate(
+          { _id: context.user._id },
+          { $addToSet: { savedBooks: book } },
+          { new: true, runValidators: true }
+        )
+  
+      return (updatedUser);
+    },
+
+    async deleteBook(_, {bookId}, context) {
+     
+      if(!context.user || !book){
+        return null;
+      }
+        const updatedUser = await User.findOneAndUpdate(
+          { _id: context.user._id },
+          { $pull: { savedBooks: {bookId} } },
+          { new: true, runValidators: true }
+        )
+  
+      return (updatedUser);
+    },
+  }
+}

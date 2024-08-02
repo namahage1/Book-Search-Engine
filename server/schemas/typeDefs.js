@@ -1,26 +1,43 @@
-const typeDefs = `
-  type Tech {
-    _id: ID!
-    name: String!
+module.exports = `
+  type Book {
+    authors: [String]
+    description: String
+    bookId: String
+    image: String
+    link: String
+    title: String
   }
 
-  type Matchup {
-    _id: ID!
-    tech1: String!
-    tech2: String!
-    tech1_votes: Int
-    tech2_votes: Int
+  type User {
+    _id: ID
+    username: String
+    email: String
+    savedBooks: [Book]
   }
+
+  type Auth {
+    token: String
+    user: User
+  }
+
 
   type Query {
-    tech: [Tech]
-    matchups(_id: String): [Matchup]
+    me: User
+  }
+
+  input BookInput {
+    authors: [String]
+    description: String
+    bookId: String
+    image: String
+    link: String
+    title: String
   }
 
   type Mutation {
-    createMatchup(tech1: String!, tech2: String!): Matchup
-    createVote(_id: String!, techNum: Int!): Matchup
+    createUser(username: String!, email: String!, password: String!): Auth
+    login(email: String!, password: String!): Auth
+    saveBook(book: BookInput): User
+    deleteBook(bookId: String): User
   }
 `;
-
-module.exports = typeDefs;
